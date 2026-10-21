@@ -1,0 +1,11 @@
+name = "facilitador-de-intercambio-worker"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Configuración de entorno / cabeceras
+[site]
+bucket = "./"
+
+# Variables públicas que necesite el Worker (opcional)
+[vars]
+ENVIRONMENT = "production"
