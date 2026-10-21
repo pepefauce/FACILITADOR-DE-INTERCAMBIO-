@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Facilitador de Intercambio | BSC Multi-Swap</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Ethers.js v5.7.2 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" integrity="sha512-FDcDpBzdzA35B13aP0aJ/Vl86i73U21K4L/B83x1M/z4E6627l+V1x30932J1zVw4/x4u+J25q5/Z165nB8+w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    body { background-color: #0b0e11; color: #eaebd7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .crypto-card { background: #181a20; border: 1px solid #2b313a; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 md:p-6">
+
+  <!-- Header -->
+  <header class="w-full max-w-lg mx-auto flex items-center justify-between py-3 px-4 crypto-card rounded-2xl mb-4">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center font-bold text-xs border border-yellow-500/40">
+        BSC
+      </div>
+      <div>
+        <h1 class="text-sm font-bold leading-tight">Facilitador de Intercambio</h1>
+        <p class="text-[10px] text-gray-400">Binance Smart Chain Mainnet</p>
+      </div>
+    </div>
+    
+    <button id="btnConnect" onclick="connectWallet()" class="bg-yellow-500 hover:bg-yellow-400 text-black font-semibold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md">
+      <span>Conectar Wallet</span>
+    </button>
+  </header>
+
+  <!-- Main Swap Card -->
+  <main class="w-full max-w-lg mx-auto crypto-card rounded-3xl p-4 md:p-6 shadow-2xl relative">
+    
+    <div class="flex justify-between items-center mb-4">
+      <span class="text-xs font-semibold uppercase tracking-wider text-gray-400">Intercambio Instantáneo</span>
+      <span class="text-[11px] bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded-full font-mono">
+        Slippage: <span id="slippageVal">0.5</span>%
+      </span>
+    </div>
+
+    <!-- TOKEN PAGAR -->
+    <div class="bg-black/40 rounded-2xl p-3 mb-2 border border-gray-800">
+      <div class="flex justify-between text-xs text-gray-400 mb-1">
+        <span>Tú Pagas</span>
+        <span>Balance: <span id="balanceIn" class="text-white font-mono">0.00</span></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <input type="number" id="amountIn" placeholder="0.0" oninput="calculateQuote()" class="w-full bg-transparent text-xl font-bold text-white outline-none font-mono" />
+        <select id="tokenIn" onchange="updateTokens()" class="bg-gray-800 text-white font-semibold text-xs rounded-xl px-3 py-2 outline-none border border-gray-700 cursor-pointer">
+          <option value="BNB" selected>BNB (Nativo)</option>
+          <option value="USDT">USDT (BEP-20)</option>
+          <option value="PEPE">PEPE (BEP-20)</option>
+          <option value="CAKE">CAKE (Pancake)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- INVERTIR -->
+    <div class="flex justify-center -my-2 z-10 relative">
+      <button onclick="switchTokens()" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 border-2 border-[#0b0e11] p-2 rounded-xl transition shadow-lg">
+        ↓↑
+      </button>
+    </div>
+
+    <!-- TOKEN RECIBIR -->
+    <div class="bg-black/40 rounded-2xl p-3 mt-2 mb-4 border border-gray-800">
+      <div class="flex justify-between text-xs text-gray-400 mb-1">
+        <span>Tú Recibes (Estimado)</span>
+        <span>Balance: <span id="balanceOut" class="text-white font-mono">0.00</span></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <input type="number" id="amountOut" placeholder="0.0" readonly class="w-full bg-transparent text-xl font-bold text-yellow-400 outline-none font-mono" />
+        <select id="tokenOut" onchange="updateTokens()" class="bg-gray-800 text-white font-semibold text-xs rounded-xl px-3 py-2 outline-none border border-gray-700 cursor-pointer">
+          <option value="USDT" selected>USDT (BEP-20)</option>
+          <option value="BNB">BNB (Nativo)</option>
+          <option value="PEPE">PEPE (BEP-20)</option>
+          <option value="CAKE">CAKE (Pancake)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- DETALLES DE RUTA -->
+    <div id="routeDetails" class="bg-black/20 rounded-xl p-3 text-xs space-y-1.5 text-gray-400 mb-4 border border-gray-800/60">
+      <div class="flex justify-between">
+        <span>Tasa de cambio:</span>
+        <span id="rateText" class="text-white font-mono">-</span>
+      </div>
+      <div class="flex justify-between">
+        <span>Ruta de Enrutamiento:</span>
+        <span id="routeText" class="text-yellow-400/90 font-mono">PancakeSwap V2/V3 BSC</span>
+      </div>
+      <div class="flex justify-between">
+        <span>Estimación Gas:</span>
+        <span id="gasText" class="text-gray-300 font-mono">~0.0008 BNB</span>
+      </div>
+    </div>
+
+    <!-- EJECUCIÓN -->
+    <button id="btnExecuteSwap" onclick="executeSwap()" disabled class="w-full bg-gray-700 text-gray-400 font-bold py-3.5 rounded-2xl text-sm transition cursor-not-allowed">
+      Conecta tu Billetera
+    </button>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full max-w-lg mx-auto text-center py-4 text-[11px] text-gray-500">
+    Facilitador de Intercambio • BSC Chain ID: 56 • Cloudflare Pages
+  </footer>
+
+  <script>
+    const TOKENS = {
+      BNB: { symbol: 'BNB', address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', decimals: 18, isNative: true },
+      USDT: { symbol: 'USDT', address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18 },
+      PEPE: { symbol: 'PEPE', address: '0x25d886376D35E382724846a3Ae19f6A257746B52', decimals: 18 },
+      CAKE: { symbol: 'CAKE', address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cce5', decimals: 18 }
+    };
+
+    let provider, signer, userAddress;
+
+    async function connectWallet() {
+      if (window.ethereum) {
+        try {
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          await provider.send("eth_requestAccounts", []);
+          
+          const network = await provider.getNetwork();
+          if (network.chainId !== 56) {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0x38' }],
+              });
+            } catch (e) {
+              alert("Por favor cambia la red de tu wallet a Binance Smart Chain (BSC).");
+              return;
+            }
+          }
+
+          signer = provider.getSigner();
+          userAddress = await signer.getAddress();
+
+          const shortAddress = userAddress.substring(0, 6) + '...' + userAddress.substring(userAddress.length - 4);
+          document.getElementById('btnConnect').innerHTML = `<span class="w-2 h-2 rounded-full bg-green-400"></span> ${shortAddress}`;
+          document.getElementById('btnConnect').className = "bg-gray-800 text-yellow-400 border border-yellow-500/40 font-semibold text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 font-mono";
+          
+          enableSwapButton();
+          updateBalances();
+        } catch (err) {
+          console.error("Error al conectar wallet:", err);
+        }
+      } else {
+        alert("Abre la app desde el navegador Web3 de tu Wallet (MetaMask o Trust Wallet).");
+      }
+    }
+
+    function enableSwapButton() {
+      const btn = document.getElementById('btnExecuteSwap');
+      btn.disabled = false;
+      btn.className = "w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-3.5 rounded-2xl text-sm transition shadow-lg cursor-pointer";
+      btn.innerText = "Ejecutar Swap Instantáneo";
+    }
+
+    async function updateBalances() {
+      if (!userAddress || !provider) return;
+
+      const inKey = document.getElementById('tokenIn').value;
+      const outKey = document.getElementById('tokenOut').value;
+
+      if (TOKENS[inKey].isNative) {
+        const rawBal = await provider.getBalance(userAddress);
+        document.getElementById('balanceIn').innerText = parseFloat(ethers.utils.formatEther(rawBal)).toFixed(4);
+      } else {
+        const contract = new ethers.Contract(TOKENS[inKey].address, ['function balanceOf(address) view returns (uint256)'], provider);
+        const rawBal = await contract.balanceOf(userAddress);
+        document.getElementById('balanceIn').innerText = parseFloat(ethers.utils.formatUnits(rawBal, TOKENS[inKey].decimals)).toFixed(2);
+      }
+
+      if (TOKENS[outKey].isNative) {
+        const rawBal = await provider.getBalance(userAddress);
+        document.getElementById('balanceOut').innerText = parseFloat(ethers.utils.formatEther(rawBal)).toFixed(4);
+      } else {
+        const contract = new ethers.Contract(TOKENS[outKey].address, ['function balanceOf(address) view returns (uint256)'], provider);
+        const rawBal = await contract.balanceOf(userAddress);
+        document.getElementById('balanceOut').innerText = parseFloat(ethers.utils.formatUnits(rawBal, TOKENS[outKey].decimals)).toFixed(2);
+      }
+    }
+
+    function switchTokens() {
+      const tokenIn = document.getElementById('tokenIn');
+      const tokenOut = document.getElementById('tokenOut');
+      const temp = tokenIn.value;
+      tokenIn.value = tokenOut.value;
+      tokenOut.value = temp;
+      calculateQuote();
+      updateBalances();
+    }
+
+    function calculateQuote() {
+      const amountIn = parseFloat(document.getElementById('amountIn').value) || 0;
+      const tokenIn = document.getElementById('tokenIn').value;
+      const tokenOut = document.getElementById('tokenOut').value;
+
+      if (amountIn <= 0) {
+        document.getElementById('amountOut').value = '';
+        document.getElementById('rateText').innerText = '-';
+        return;
+      }
+
+      const mockPrices = { BNB: 600, USDT: 1, PEPE: 0.00001, CAKE: 2.5 };
+      const rateInToUsd = mockPrices[tokenIn] || 1;
+      const rateOutToUsd = mockPrices[tokenOut] || 1;
+
+      const estimatedOut = (amountIn * rateInToUsd) / rateOutToUsd;
+      document.getElementById('amountOut').value = estimatedOut.toFixed(4);
+
+      const rateUnit = (1 * rateInToUsd) / rateOutToUsd;
+      document.getElementById('rateText').innerText = `1 ${tokenIn} ≈ ${rateUnit.toFixed(4)} ${tokenOut}`;
+    }
+
+    function updateTokens() {
+      calculateQuote();
+      updateBalances();
+    }
+
+    async function executeSwap() {
+      if (!signer) return alert("Por favor conecta tu wallet primero.");
+
+      const tokenIn = document.getElementById('tokenIn').value;
+      const tokenOut = document.getElementById('tokenOut').value;
+      const amount = document.getElementById('amountIn').value;
+
+      if (!amount || amount <= 0) return alert("Ingresa un monto válido.");
+
+      alert(`Iniciando orden en Facilitador de Intercambio para cambiar ${amount} ${tokenIn} por ${tokenOut}...`);
+    }
+  </script>
+</body>
+</html>
